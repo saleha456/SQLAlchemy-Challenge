@@ -2,7 +2,7 @@ import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func, desc
-
+import datetime as dtt
 from datetime import datetime as dt
 from flask import Flask, jsonify
 
@@ -13,12 +13,6 @@ Base.prepare(engine, reflect=True)
 
 Measurement = Base.classes.measurement
 Station = Base.classes.station
-
-
-
-
-
-
 
 
 
@@ -37,8 +31,6 @@ def home():
         f"/api/v1.0/tobs<br/>"
         f"/api/v1.0/yyyy-mm-dd<br/>"
         f"/api/v1.0/yyyy-mm-dd/yyyy-mm-dd<br/>")
-
-
 
 
 
@@ -97,15 +89,11 @@ def temp():
 
     # Get most recent date
     most_recent_date = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
-    
-    # Convert day, month, and year to int
-    most_recent_date_list = most_recent_date.split('-',3)
-    day = int(most_recent_date_list[2])
-    month = int(most_recent_date_list[1])
-    year = int(most_recent_date_list[0])
+    most_recent_date = dt.strptime(most_recent_date, "%Y-%m-%d")
+   
 
     # Get date from one year prior
-    twelvemonthsprior = dt.date(year, month, day) - dt.timedelta(days=365)
+    twelvemonthsprior = most_recent_date - dtt.timedelta(days=365)
 
 
 
@@ -141,19 +129,22 @@ def temp():
 @app.route("/api/v1.0/<start>")
 def startrange(start):
 
+	# Get start date
 	startdate = dt.strptime(start,"%Y-%m-%d")
+	startdate = startdate - dtt.timedelta(days=1)
 	
 
-
-
+	# Create sesson and query results
 	session = Session(engine)
 
 	results = session.query(Measurement.date, func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
 	group_by(Measurement.date).\
-	filter(Measurement.date >= startdate).all()
+	filter(Measurement.date > startdate).all()
 
 	session.close()
 
+
+	# Store data into a dictionary
 	all_tobs = []
 
 	for date, mintemp, maxtemp, avgtemp in results:
@@ -169,10 +160,14 @@ def startrange(start):
 	return jsonify(all_tobs)  
 
 @app.route("/api/v1.0/<start>/<end>")
-def startendrange(start):
+def startendrange(start=None, end=None):
+
+	# Get start and end dates as variables
 	startdate = dt.strptime(start,"%Y-%m-%d")
+	startdate = startdate - dtt.timedelta(days=1)
 	enddate = dt.strptime(end, "%Y-%m-%d")
 
+	# Create session and query results
 	session = Session(engine)
 
 	results = session.query(Measurement.date, func.min(Measurement.tobs),func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
@@ -182,6 +177,7 @@ def startendrange(start):
 
 	session.close()
 
+	# Store data as a dictionary
 	all_tobs = []
 
 	for date, mintemp, maxtemp, avgtemp in results:

@@ -2,10 +2,8 @@ import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func, desc
-import datetime as dt
 
-
-
+from datetime import datetime as dt
 from flask import Flask, jsonify
 
 engine = create_engine("sqlite:///hawaii.sqlite")
@@ -38,7 +36,7 @@ def home():
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
         f"/api/v1.0/yyyy-mm-dd<br/>"
-        f"/api/v1.0/yyyy-mm-dd/yyyy-mm/dd<br/>")
+        f"/api/v1.0/yyyy-mm-dd/yyyy-mm-dd<br/>")
 
 
 
@@ -143,12 +141,8 @@ def temp():
 @app.route("/api/v1.0/<start>")
 def startrange(start):
 
-	startdate = start
-	startdatelist = startdate.split('-',3)
-	day = int(startdatelist[2])
-	month = int(startdatelist[1])
-	year = int(startdatelist[0])
-	startdate = dt.date(year, month, day)
+	startdate = dt.strptime(start,"%Y-%m-%d")
+	
 
 
 
@@ -167,21 +161,39 @@ def startrange(start):
 		tobs_dict["date"] = date
 		tobs_dict["minimumtemp"] = mintemp
 		tobs_dict["maximumtemp"] = maxtemp
-		tobs_dict["avgtemp"] = avgtemp
+		tobs_dict["avgtemp"] = round(avgtemp,2)
 
 		all_tobs.append(tobs_dict)
 
 
-    
+	return jsonify(all_tobs)  
+
 @app.route("/api/v1.0/<start>/<end>")
-def startendrange():
-    return (
-        f"Available Routes:<br/>"
-        f"/api/v1.0/precipitation<br/>"
-        f"/api/v1.0/stations<br/>"
-        f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/yyyy-mm-dd<br/>"
-        f"/api/v1.0/yyyy-mm-dd/yyyy-mm/dd<br/>")
+def startendrange(start):
+	startdate = dt.strptime(start,"%Y-%m-%d")
+	enddate = dt.strptime(end, "%Y-%m-%d")
+
+	session = Session(engine)
+
+	results = session.query(Measurement.date, func.min(Measurement.tobs),func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+	group_by(Measurement.date).\
+	filter(Measurement.date >= startdate).\
+	filter(Measurement.date <= enddate).all()
+
+	session.close()
+
+	all_tobs = []
+
+	for date, mintemp, maxtemp, avgtemp in results:
+		tobs_dict = {}
+		tobs_dict["date"] = date
+		tobs_dict["minimumtemp"] = mintemp
+		tobs_dict["maximumtemp"] = maxtemp
+		tobs_dict["avgtemp"] = round(avgtemp,2)
+
+		all_tobs.append(tobs_dict)
+
+	return jsonify(all_tobs)
 
 
 

@@ -61,24 +61,32 @@ def stations():
 @app.route("/api/v1.0/precipitation")
 def precipitation():
 	
-
-
 	session = Session(engine)
 
-	results = session.query(Measurement.date, Measurement.prcp).all()
+	# Get most recent date and the date from one year prior
+	max_date_str = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
+	max_date = dt.strptime(max_date_str, "%Y-%m-%d")
+	max_date_ly = max_date - dtt.timedelta(days=365)
+
+
+	#Query precipitation results for last year of data
+	results = session.query(Measurement.date, Measurement.prcp).\
+	filter(Measurement.date > max_date_ly).all()
+
 
 	session.close()
 
-	all_prcp = []
+
+	dates = []
+	prcps = []
 
 	for date, prcp in results:
-		prcp_dict = {}
-		prcp_dict["date"] = date
-		prcp_dict["precipitation"] = prcp
+		dates.append(date)
+		prcps.append(prcp)
 
-		all_prcp.append(prcp_dict)
+	prcp_dict = dict(zip(dates, prcps))
 
-	return jsonify(all_prcp)
+	return jsonify(prcp_dict)
 
 
 
@@ -141,7 +149,18 @@ def startrange(start):
 	group_by(Measurement.date).\
 	filter(Measurement.date > startdate).all()
 
+
+	# Find min and max dates from measurement data
+	max_date_str = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
+	max_date = dt.strptime(max_date_str,"%Y-%m-%d")
+	min_date_str = session.query(Measurement.date).order_by(Measurement.date.asc()).first()[0]
+	min_date = dt.strptime(min_date_str,"%Y-%m-%d")
+
 	session.close()
+
+	# Message if date outside range
+	if (startdate < min_date or startdate > max_date) == True:
+		return f"Please enter a date between {min_date_str} and {max_date_str}."
 
 
 	# Store data into a dictionary
@@ -175,7 +194,21 @@ def startendrange(start=None, end=None):
 	filter(Measurement.date >= startdate).\
 	filter(Measurement.date <= enddate).all()
 
+	# Find min and max dates from measurement data
+	max_date_str = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
+	max_date = dt.strptime(max_date_str, "%Y-%m-%d")
+	min_date_str = session.query(Measurement.date).order_by(Measurement.date.asc()).first()[0]
+	min_date = dt.strptime(min_date_str, "%Y-%m-%d")
+
+
 	session.close()
+
+
+	# Message if date outside range
+	if (startdate < min_date or startdate > max_date or enddate < min_date or enddate > max_date) == True:
+		return f"Please enter a date range between {min_date_str} and {max_date_str}."
+
+
 
 	# Store data as a dictionary
 	all_tobs = []

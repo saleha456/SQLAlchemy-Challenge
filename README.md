@@ -28,9 +28,9 @@ Six different routes were created:
 
 4. ***/api/v1.0/tobs*:** Temperature observations for each date for the last year of data for the most active station.
 
-5. ***/api/v1.0/<start>*** **:** Queries the min, max, and avg temperatures for the date entered and every subsequent date.
+5. ***/api/v1.0/yyyy-mm-dd*** **:** Queries the min, max, and avg temperatures for the date entered and every subsequent date.
 
-6. ***/api/v1.0/<start>/<end>***: Queries the min, max, and avg temperature for each date in between the entered date range.
+6. ***/api/v1.0/yyyy-mm-dd/yyy-mm-dd***: Queries the min, max, and avg temperature for each date in between the entered date range.
 
    
 

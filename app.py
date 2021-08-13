@@ -96,12 +96,12 @@ def temp():
     session = Session(engine)
 
     # Get most recent date
-    most_recent_date = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
-    most_recent_date = dt.strptime(most_recent_date, "%Y-%m-%d")
+    max_date_str = session.query(Measurement.date).order_by(Measurement.date.desc()).first()[0]
+    max_date = dt.strptime(max_date_str, "%Y-%m-%d")
    
 
     # Get date from one year prior
-    twelvemonthsprior = most_recent_date - dtt.timedelta(days=365)
+    max_date_ly = max_date - dtt.timedelta(days=365)
 
 
 
@@ -114,7 +114,7 @@ def temp():
     # Query temperature results for last year of data for the most active station
     results = session.query(Measurement.station, Measurement.date, Measurement.tobs).\
     		filter(Measurement.station == stationid).\
-    		filter(Measurement.date > twelvemonthsprior).all()
+    		filter(Measurement.date > max_date_ly).all()
 
 	# Close session
     session.close()
